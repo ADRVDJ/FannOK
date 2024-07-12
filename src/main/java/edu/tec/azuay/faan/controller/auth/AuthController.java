@@ -38,20 +38,14 @@ public class AuthController {
         return ResponseEntity.ok(rsp);
     }
 
-    //    @PreAuthorize("permitAll()")
-//    @PostMapping("/register")
-//    public ResponseEntity<RegisteredUser> register(@RequestPart("newUser") SaveUser newUser, @RequestPart("image") MultipartFile file) throws IOException {
-//        RegisteredUser user = authenticationService.registerUser(newUser, file);
-//
-//        return ResponseEntity.ok(user);
-//    }
     @PreAuthorize("permitAll()")
     @PostMapping("/register")
-    public ResponseEntity<RegisteredUser> register(@RequestBody SaveUser newUser) throws IOException {
-        RegisteredUser user = authenticationService.registerUser(newUser, null);
+    public ResponseEntity<RegisteredUser> register(@RequestPart("newUser") SaveUser newUser, @RequestPart("image") MultipartFile file) throws IOException {
+        RegisteredUser user = authenticationService.registerUser(newUser, file);
 
         return ResponseEntity.ok(user);
     }
+
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/profile")
