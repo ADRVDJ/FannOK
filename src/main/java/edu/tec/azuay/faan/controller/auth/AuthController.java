@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 @RestController
-@RequestMapping ("/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -24,7 +24,7 @@ public class AuthController {
 
     @PreAuthorize("permitAll()")
     @GetMapping("/validate")
-    public ResponseEntity<Boolean> validate(@RequestParam String jwt){
+    public ResponseEntity<Boolean> validate(@RequestParam String jwt) {
         boolean isTokenValid = authenticationService.validate(jwt);
 
         return ResponseEntity.ok(isTokenValid);
@@ -32,23 +32,30 @@ public class AuthController {
 
     @PreAuthorize("permitAll()")
     @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest requestAuthentication){
+    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest requestAuthentication) {
         AuthenticationResponse rsp = authenticationService.login(requestAuthentication);
 
         return ResponseEntity.ok(rsp);
     }
 
+    //    @PreAuthorize("permitAll()")
+//    @PostMapping("/register")
+//    public ResponseEntity<RegisteredUser> register(@RequestPart("newUser") SaveUser newUser, @RequestPart("image") MultipartFile file) throws IOException {
+//        RegisteredUser user = authenticationService.registerUser(newUser, file);
+//
+//        return ResponseEntity.ok(user);
+//    }
     @PreAuthorize("permitAll()")
     @PostMapping("/register")
-    public ResponseEntity<RegisteredUser> register(@RequestPart("newUser") SaveUser newUser, @RequestPart("image") MultipartFile file) throws IOException {
-        RegisteredUser user = authenticationService.registerUser(newUser, file);
+    public ResponseEntity<RegisteredUser> register(@RequestBody SaveUser newUser) throws IOException {
+        RegisteredUser user = authenticationService.registerUser(newUser, null);
 
         return ResponseEntity.ok(user);
     }
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/profile")
-    public ResponseEntity<User> findMyProfile(){
+    public ResponseEntity<User> findMyProfile() {
         User user = authenticationService.findLoggedInUser();
 
         return ResponseEntity.ok(user);
@@ -56,7 +63,7 @@ public class AuthController {
 
     @PreAuthorize("permitAll()")
     @PostMapping("/refresh-token")
-    public ResponseEntity<AuthenticationResponse> refreshToken(@RequestBody TokenRefreshRequest refreshToken){
+    public ResponseEntity<AuthenticationResponse> refreshToken(@RequestBody TokenRefreshRequest refreshToken) {
         AuthenticationResponse rsp = authenticationService.refreshToken(refreshToken);
 
         return ResponseEntity.ok(rsp);

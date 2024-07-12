@@ -64,7 +64,7 @@ public class UserServiceImpl implements IUserService {
     @Transactional
     @Override
     public User createOneUser(SaveUser newUser, MultipartFile file) throws IOException {
-        ImageResponse imageResponse = imageService.uploadImage(file);
+       // ImageResponse imageResponse = imageService.uploadImage(file);
 
         Optional<User> presentUser = userRepository.findByUsername(newUser.getUsername());
 
@@ -77,8 +77,8 @@ public class UserServiceImpl implements IUserService {
         User user = saveUserToEntity(newUser);
         user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         user.setRole(Role.USER);
-        user.setImagePath(imageResponse.getImagePath());
-        user.setImageUrl(imageResponse.getImageUrl());
+       // user.setImagePath(imageResponse.getImagePath());
+        //user.setImageUrl(imageResponse.getImageUrl());
 
         return userRepository.insert(user);
     }
