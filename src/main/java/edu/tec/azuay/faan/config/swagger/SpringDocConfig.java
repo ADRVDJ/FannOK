@@ -20,7 +20,17 @@ import org.springframework.http.HttpHeaders;
                         name = "FAAN",
                         url = "https://www.faanecuador.org/es/"
                 )
-        )
+        ),
+        servers = {
+                @io.swagger.v3.oas.annotations.servers.Server(
+                        url = "https://fannok-production.up.railway.app/api/v1",
+                        description = "Production server"
+                ),
+                @io.swagger.v3.oas.annotations.servers.Server(
+                        url = "http://localhost:8080/api/v1",
+                        description = "Local server"
+                )
+        }
 )
 
 @SecurityScheme(

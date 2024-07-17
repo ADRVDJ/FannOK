@@ -11,12 +11,12 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+
+import static edu.tec.azuay.faan.service.secondary.UploadServiceImpl.getHash;
 
 @Service
 @RequiredArgsConstructor
@@ -61,17 +61,7 @@ public class ImageService {
     }
 
     private String calculateHash(byte[] fileBytes) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = md.digest(fileBytes);
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error calculating hash", e);
-        }
+        return getHash(fileBytes);
     }
 
     public Image findByPath(String path) {

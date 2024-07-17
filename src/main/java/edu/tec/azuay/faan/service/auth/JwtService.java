@@ -18,9 +18,9 @@ public class JwtService {
     private String SECRET_KEY;
 
     /*
-     * 30 minutes
+     * 3 hours
      */
-    private static final Long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 30;
+    private static final Long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 60 * 3;
 
     /*
      * 30 days

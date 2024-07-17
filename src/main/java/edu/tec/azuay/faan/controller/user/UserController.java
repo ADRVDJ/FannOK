@@ -57,7 +57,7 @@ public class UserController {
     }
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    @PutMapping("/{username}")
+    @PutMapping(value = "/{username}", consumes = {"multipart/form-data"})
     public ResponseEntity<?> updateUserPhoto(@PathVariable String username, @RequestParam MultipartFile file) throws IOException {
         return ResponseEntity.ok(userService.updateUserReference(username, file));
     }
