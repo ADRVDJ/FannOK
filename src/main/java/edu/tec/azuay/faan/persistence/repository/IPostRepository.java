@@ -16,6 +16,8 @@ public interface IPostRepository extends MongoRepository<Post, String> {
 
     Page<Post> findAll(Pageable pageable);
 
+    Page<Post> findByTitleIsContainingIgnoreCase(String title, Pageable pageable);
+
     Page<Post> findByTitleAndCreateAtBetween(String title, LocalDateTime createAt, LocalDateTime createAtUp, Pageable pageable);
 
     Page<Post> findByType(PostType Type, Pageable pageable);

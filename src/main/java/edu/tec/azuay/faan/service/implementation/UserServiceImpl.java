@@ -13,7 +13,9 @@ import edu.tec.azuay.faan.persistence.dto.secondary.SavedUser;
 import edu.tec.azuay.faan.persistence.entity.Image;
 import edu.tec.azuay.faan.persistence.entity.User;
 import edu.tec.azuay.faan.persistence.repository.IUserRepository;
+import edu.tec.azuay.faan.persistence.repository.ImageRepository;
 import edu.tec.azuay.faan.persistence.utils.Role;
+import edu.tec.azuay.faan.service.interfaces.IUploadService;
 import edu.tec.azuay.faan.service.interfaces.IUserService;
 import edu.tec.azuay.faan.service.secondary.ImageService;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +44,13 @@ public class UserServiceImpl implements IUserService {
 
     private final ModelMapper modelMapper;
 
-    private final ImageService imageService;
+    private final ImageRepository imageRepository;
+
+    private final IUploadService uploadService;
 
     private final PasswordEncoder bCryptPasswordEncoder;
+
+    private static final String FOLDER = "images";
 
     public User saveUserToEntity(SaveUser saveUser) {
         return modelMapper.map(saveUser, User.class);
@@ -54,8 +60,8 @@ public class UserServiceImpl implements IUserService {
         return modelMapper.map(savedUser, User.class);
     }
 
-    public SavedUser entityToDto(User user) {
-        Image image = imageService.findByPath(user.getImagePath());
+    public SavedUser entityToDto(User user){
+        Image image = imageRepository.findByImagePath(user.getImagePath());
         user.setImageUrl(image.getImageUrl());
 
         return modelMapper.map(user, SavedUser.class);
@@ -64,21 +70,20 @@ public class UserServiceImpl implements IUserService {
     @Transactional
     @Override
     public User createOneUser(SaveUser newUser, MultipartFile file) throws IOException {
-        ImageResponse imageResponse = imageService.uploadImage(file);
-
-        Optional<User> presentUser = userRepository.findByUsername(newUser.getUsername());
+        Optional<User> presentUser = userRepository.findByUsernameOrEmailIgnoreCase(newUser.getUsername(), newUser.getEmail());
 
         if (presentUser.isPresent()) {
-            throw new DuplicatedObjectFoundException("Username: " + newUser.getUsername() + " already exists");
+            throw new DuplicatedObjectFoundException(String.format("User with username: %s or email: %s already exists", newUser.getUsername(), newUser.getEmail()));
         }
+
+        String imageResponse = uploadService.saveFile(file, FOLDER);
 
         validatePassword(newUser);
 
         User user = saveUserToEntity(newUser);
         user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         user.setRole(Role.USER);
-        user.setImagePath(imageResponse.getImagePath());
-        user.setImageUrl(imageResponse.getImageUrl());
+        user.setImagePath(imageResponse);
 
         return userRepository.insert(user);
     }
@@ -175,14 +180,14 @@ public class UserServiceImpl implements IUserService {
     public User updateUserReference(String username, MultipartFile file) throws IOException {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ObjectNotFoundException("User not found"));
 
-        ImageResponse imageResponse = imageService.uploadImage(file);
+        String imageResponse = uploadService.saveFile(file, FOLDER);
 
-        if (imageResponse.getMessage().equals("Photo not saved") || ObjectUtils.isEmpty(imageResponse)) {
+        if (ObjectUtils.isEmpty(imageResponse)) {
             throw new IOException("Unable to update the photo in user with username:" + username);
         }
 
-        user.setImagePath(imageResponse.getImagePath());
-        user.setImageUrl(imageResponse.getImageUrl());
+        user.setImagePath(imageResponse);
+        user.setImageUrl(uploadService.getUrlFile(imageResponse, FOLDER));
 
         return userRepository.save(user);
     }
@@ -220,7 +225,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Author getAuthorByUsername(String username) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ObjectNotFoundException("User not found"));
-        Image image = imageService.findByPath(user.getImagePath());
+        Image image = imageRepository.findByImagePath(user.getImagePath());
         user.setImageUrl(image.getImageUrl());
 
         return modelMapper.map(user, Author.class);

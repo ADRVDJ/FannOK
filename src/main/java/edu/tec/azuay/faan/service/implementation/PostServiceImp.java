@@ -13,16 +13,19 @@ import edu.tec.azuay.faan.persistence.entity.Post;
 import edu.tec.azuay.faan.persistence.entity.User;
 import edu.tec.azuay.faan.persistence.repository.IPostRepository;
 import edu.tec.azuay.faan.persistence.repository.IUserRepository;
+import edu.tec.azuay.faan.persistence.repository.ImageRepository;
 import edu.tec.azuay.faan.persistence.utils.PostState;
 import edu.tec.azuay.faan.persistence.utils.PostType;
 import edu.tec.azuay.faan.persistence.utils.Role;
 import edu.tec.azuay.faan.service.interfaces.IPostService;
+import edu.tec.azuay.faan.service.interfaces.IUploadService;
 import edu.tec.azuay.faan.service.secondary.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -41,9 +44,13 @@ public class PostServiceImp implements IPostService {
 
     private final ModelMapper modelMapper;
 
-    private final ImageService imageService;
+    private final IUploadService uploadService;
 
     private final IUserRepository userRepository;
+
+    private static final String FOLDER = "images";
+
+    private final ImageRepository imageRepository;
 
     public Post savePostToEntity(SavePost newPost) {
         return modelMapper.map(newPost, Post.class);
@@ -66,14 +73,16 @@ public class PostServiceImp implements IPostService {
             checkUserAllowedToCreatePost(post.getAuthor());
         }
 
-        ImageResponse imageResponse = imageService.uploadImage(file);
-        post.setImagePath(imageResponse.getImagePath());
-        post.setImageUrl(imageResponse.getImageUrl());
+        String imageResponse = uploadService.saveFile(file, FOLDER);
+        String imageUrl = uploadService.getUrlFile(imageResponse, FOLDER);
+
+        post.setImagePath(imageResponse);
+        post.setImageUrl(imageUrl);
 
         Post savedPost = postRepository.insert(post);
 
         newPost.setId(savedPost.getId());
-        newPost.setImageUrl(imageResponse.getImageUrl());
+        newPost.setImageUrl(imageUrl);
 
         applicationEventPublisher.publishEvent(new PostCreatedEvent(newPost));
 
@@ -83,9 +92,10 @@ public class PostServiceImp implements IPostService {
     @Transactional
     @Override
     public SavePost updatePostReference(String id, MultipartFile file) throws IOException {
-        ImageResponse photoResponse = imageService.uploadImage(file);
+        String photoResponse = uploadService.saveFile(file, FOLDER);
+        String imageUrl = !photoResponse.isEmpty() ? uploadService.getUrlFile(photoResponse, FOLDER) : "";
 
-        if (photoResponse.getMessage().contains("not saved") || ObjectUtils.isEmpty(photoResponse)) {
+        if (ObjectUtils.isEmpty(photoResponse)) {
             throw new RuntimeException("Image not saved");
         }
 
@@ -95,8 +105,8 @@ public class PostServiceImp implements IPostService {
             throw new DuplicatedObjectFoundException("In the last 60 seconds, a post with the same title already exists");
         }
 
-        post.setImagePath(photoResponse.getImagePath());
-        post.setImageUrl(photoResponse.getImageUrl());
+        post.setImagePath(photoResponse);
+        post.setImageUrl(imageUrl);
 
         postRepository.save(post);
 
@@ -121,7 +131,7 @@ public class PostServiceImp implements IPostService {
     }
 
     /**
-     * This method retrieves a paginated list of posts.
+     * This method retrieves a paginated list of posts with a desc order by creation date.
      *
      * @param pageNumber the page number to retrieve.
      * @param pageSize the size of the page to retrieve.
@@ -129,7 +139,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPosts(int pageNumber, int pageSize) {
-        return postRepository.findAll(PageRequest.of(pageNumber, pageSize))
+        return postRepository.findAll(PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -225,6 +235,20 @@ public class PostServiceImp implements IPostService {
         postRepository.save(post);
 
         return status;
+    }
+
+    /**
+     * This method retrieves a paginated list of posts by their title.
+     * @param title the title of the posts to retrieve.
+     * @param pageNumber the page number to retrieve.
+     * @param pageSize the size of the page to retrieve.
+     * @return a paginated list of SavePost objects with the specified title.
+     */
+    @Override
+    public Page<SavePost> getPostsByTitle(String title, int pageNumber, int pageSize) {
+        return postRepository.findByTitleIsContainingIgnoreCase(title,
+                        PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
+                .map(this::convertPostToSavePost);
     }
 
     /**
@@ -433,7 +457,7 @@ public class PostServiceImp implements IPostService {
     }
 
     private String getImageFromPath(String path) {
-        Image image = imageService.findByPath(path);
+        Image image = imageRepository.findByImagePath(path);
 
         return image.getImageUrl();
     }

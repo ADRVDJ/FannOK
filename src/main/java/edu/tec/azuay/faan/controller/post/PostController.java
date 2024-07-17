@@ -6,6 +6,7 @@ import edu.tec.azuay.faan.persistence.utils.PostState;
 import edu.tec.azuay.faan.persistence.utils.PostType;
 import edu.tec.azuay.faan.service.interfaces.IPostService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +24,21 @@ public class PostController {
     private final IPostService postService;
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    @PostMapping("/register-post")
+    @PostMapping(value = "/register-post", consumes = {"multipart/form-data"})
     public ResponseEntity<?> createPost(@RequestPart("post") SavePost newPost, @RequestPart("image") MultipartFile image) throws IOException {
         SavePost saved = postService.save(newPost, image);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    @PreAuthorize("permitAll()")
+    @GetMapping("find-by-title")
+    public ResponseEntity<Page<SavePost>> findPostsByTitleIsContaining(@RequestParam String title,
+                                                                       @RequestParam(value = "pageNumber", defaultValue = "0") int pageNumber,
+                                                                       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
+        Page<SavePost> posts = postService.getPostsByTitle(title, pageNumber, pageSize);
+
+        return ResponseEntity.ok().body(posts);
     }
 
     @PreAuthorize("permitAll()")
@@ -147,6 +158,14 @@ public class PostController {
     public ResponseEntity<String> updatePost(@RequestBody SavePost post) {
         postService.updatePost(post);
         return ResponseEntity.ok("Post updated successfully");
+    }
+
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PutMapping(value = "/update-image-post/{id}", consumes = {"multipart/form-data"})
+    public ResponseEntity<String> updatePostReference(@PathVariable String id, @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        postService.updatePostReference(id, file);
+        return ResponseEntity.ok("Post image updated successfully");
     }
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")

@@ -18,39 +18,41 @@ public interface IPostService {
 
     SavePost update(SavePost newPost);
 
-    public Page<SavePost> getPosts(int pageNumber, int pageSize);
+    Page<SavePost> getPosts(int pageNumber, int pageSize);
 
-    public Post getPostById(String id);
+    Post getPostById(String id);
 
-    public void deletePost(String id);
+    void deletePost(String id);
 
-    public void updatePost(SavePost post);
+    void updatePost(SavePost post);
 
-    public void updateStatePost(String id, PostState state);
+    void updateStatePost(String id, PostState state);
 
-    public String likePost(LikedPost likedPost);
+    String likePost(LikedPost likedPost);
 
-    public Page<SavePost> getLikedPostsByAuthorId(String id, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByTitle(String title, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByType(PostType type, int pageNumber, int pageSize);
+    Page<SavePost> getLikedPostsByAuthorId(String id, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByState(PostState state, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByType(PostType type, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByTypeAndState(PostType type, PostState state, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByState(PostState state, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByUser(String user, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByTypeAndState(PostType type, PostState state, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByUserId(String userId, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByUser(String user, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByTypeAndUser(PostType type, String user, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByUserId(String userId, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByStateAndUser(PostState state, String user, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByTypeAndUser(PostType type, String user, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByTypeAndStateAndUser(PostType type, PostState state, String user, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByStateAndUser(PostState state, String user, int pageNumber, int pageSize);
 
-    public Page<SavePost> getPostsByTypeAndStateAndDate(PostType type, PostState state, LocalDateTime date, int pageNumber, int pageSize);
+    Page<SavePost> getPostsByTypeAndStateAndUser(PostType type, PostState state, String user, int pageNumber, int pageSize);
 
-    public SavePost getSavePostById(String id);
+    Page<SavePost> getPostsByTypeAndStateAndDate(PostType type, PostState state, LocalDateTime date, int pageNumber, int pageSize);
 
-    public Page<SavePost> getAllPostsToSavePost(int pageNumber, int pageSize);
+    SavePost getSavePostById(String id);
+
+     Page<SavePost> getAllPostsToSavePost(int pageNumber, int pageSize);
 }
