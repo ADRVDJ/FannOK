@@ -1,9 +1,7 @@
 package edu.tec.azuay.faan.controller.user;
 
 import edu.tec.azuay.faan.persistence.dto.email.ResetPasswordRequest;
-import edu.tec.azuay.faan.persistence.dto.primary.SaveUser;
 import edu.tec.azuay.faan.persistence.dto.secondary.SavedUser;
-import edu.tec.azuay.faan.persistence.repository.IUserRepository;
 import edu.tec.azuay.faan.service.interfaces.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

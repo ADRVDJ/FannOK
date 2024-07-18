@@ -18,8 +18,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-import static edu.tec.azuay.faan.persistence.utils.ConstantNames.FOLDER_MAPPING;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/upload")
@@ -27,7 +25,7 @@ public class UploadController {
 
     private final IUploadService uploadService;
 
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("denyAll()")
     @PostMapping
     public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam MultipartFile file, @RequestParam String folder) {
         Map<String, Object> response = new HashMap<>();

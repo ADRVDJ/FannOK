@@ -6,7 +6,6 @@ import edu.tec.azuay.faan.persistence.utils.PostState;
 import edu.tec.azuay.faan.persistence.utils.PostType;
 import edu.tec.azuay.faan.service.interfaces.IPostService;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/post")
@@ -131,8 +131,8 @@ public class PostController {
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/like")
-    public ResponseEntity<String> likePost(@RequestBody LikedPost likedPost) {
-        String status = postService.likePost(likedPost);
+    public ResponseEntity<List<String>> likePost(@RequestBody LikedPost likedPost) {
+        List<String> status = postService.likePost(likedPost);
         return ResponseEntity.ok(status);
     }
 
@@ -177,9 +177,16 @@ public class PostController {
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deletePost(@PathVariable String id) {
-        postService.deletePost(id);
+    public ResponseEntity<String> deletePost(@PathVariable String id, @RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractTokenFromHeader(authorizationHeader);
+        postService.deletePost(id, token);
         return ResponseEntity.ok("Post deleted successfully");
     }
 
+    private String extractTokenFromHeader(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null;
+    }
 }

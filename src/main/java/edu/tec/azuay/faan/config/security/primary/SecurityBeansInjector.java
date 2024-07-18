@@ -3,7 +3,6 @@ package edu.tec.azuay.faan.config.security.primary;
 import edu.tec.azuay.faan.exceptions.ObjectNotFoundException;
 import edu.tec.azuay.faan.persistence.repository.IUserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

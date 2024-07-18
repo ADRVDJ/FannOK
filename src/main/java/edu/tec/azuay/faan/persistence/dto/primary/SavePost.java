@@ -7,8 +7,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -35,4 +37,6 @@ public class SavePost implements Serializable {
     private String state;
 
     private String imageUrl;
+
+    private List<String> likes;
 }

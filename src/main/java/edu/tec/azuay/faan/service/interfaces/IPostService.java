@@ -7,8 +7,10 @@ import edu.tec.azuay.faan.persistence.utils.PostState;
 import edu.tec.azuay.faan.persistence.utils.PostType;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface IPostService {
 
@@ -22,13 +24,13 @@ public interface IPostService {
 
     Post getPostById(String id);
 
-    void deletePost(String id);
+    void deletePost(String id, String token);
 
     void updatePost(SavePost post);
 
     void updateStatePost(String id, PostState state);
 
-    String likePost(LikedPost likedPost);
+    List<String> likePost(LikedPost likedPost);
 
     Page<SavePost> getPostsByTitle(String title, int pageNumber, int pageSize);
 

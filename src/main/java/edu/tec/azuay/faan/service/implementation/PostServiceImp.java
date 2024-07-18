@@ -7,7 +7,6 @@ import edu.tec.azuay.faan.persistence.dto.primary.Animal;
 import edu.tec.azuay.faan.persistence.dto.primary.Author;
 import edu.tec.azuay.faan.persistence.dto.primary.LikedPost;
 import edu.tec.azuay.faan.persistence.dto.primary.SavePost;
-import edu.tec.azuay.faan.persistence.dto.secondary.ImageResponse;
 import edu.tec.azuay.faan.persistence.entity.Image;
 import edu.tec.azuay.faan.persistence.entity.Post;
 import edu.tec.azuay.faan.persistence.entity.User;
@@ -17,9 +16,9 @@ import edu.tec.azuay.faan.persistence.repository.ImageRepository;
 import edu.tec.azuay.faan.persistence.utils.PostState;
 import edu.tec.azuay.faan.persistence.utils.PostType;
 import edu.tec.azuay.faan.persistence.utils.Role;
+import edu.tec.azuay.faan.service.auth.JwtService;
 import edu.tec.azuay.faan.service.interfaces.IPostService;
 import edu.tec.azuay.faan.service.interfaces.IUploadService;
-import edu.tec.azuay.faan.service.secondary.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,10 +28,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +54,8 @@ public class PostServiceImp implements IPostService {
 
     private final ImageRepository imageRepository;
 
+    private final JwtService jwtService;
+
     public Post savePostToEntity(SavePost newPost) {
         return modelMapper.map(newPost, Post.class);
     }
@@ -70,7 +74,7 @@ public class PostServiceImp implements IPostService {
         }
 
         if (post.getType().name().equals(PostType.ADOPTION.name())) {
-            checkUserAllowedToCreatePost(post.getAuthor());
+            checkUserAllowedToActionPost(post.getAuthor());
         }
 
         String imageResponse = uploadService.saveFile(file, FOLDER);
@@ -160,8 +164,17 @@ public class PostServiceImp implements IPostService {
      * @param id the id of the post to delete.
      */
     @Override
-    public void deletePost(String id) {
-        postRepository.deleteById(id);
+    public void deletePost(String id, String token) {
+
+        String username = jwtService.extractUsername(token);
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ObjectNotFoundException("User not found"));
+
+        Post post = getPostById(id);
+
+        checkUserAllowedToActionPost(user, "delete", post);
+
+        postRepository.delete(post);
     }
 
     /**
@@ -209,7 +222,7 @@ public class PostServiceImp implements IPostService {
      * @return a string message indicating the result of the operation.
      */
     @Override
-    public String likePost(LikedPost postToLike) {
+    public List<String> likePost(LikedPost postToLike) {
         Post post = getPostById(postToLike.getPostId());
         String status; //Removed "" value From Here - Maybe can cause and error - Or maybe not XD - IDK
 
@@ -232,9 +245,9 @@ public class PostServiceImp implements IPostService {
             }
         }
 
-        postRepository.save(post);
+        Post savedPost =  postRepository.save(post);
 
-        return status;
+        return StringUtils.hasText(status) ? savedPost.getLikes() : new ArrayList<>();
     }
 
     /**
@@ -261,7 +274,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getLikedPostsByAuthorId(String id, int pageNumber, int pageSize) {
-        return postRepository.findPostsLikedByAuthor(id, PageRequest.of(pageNumber, pageSize)).map(this::convertPostToSavePost);
+        return postRepository.findPostsLikedByAuthor(id, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt"))).map(this::convertPostToSavePost);
     }
 
     /**
@@ -274,7 +287,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByType(PostType type, int pageNumber, int pageSize) {
-        return postRepository.findByType(type, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByType(type, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -288,7 +301,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByState(PostState state, int pageNumber, int pageSize) {
-        return postRepository.findByState(state, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByState(state, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -303,7 +316,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByTypeAndState(PostType type, PostState state, int pageNumber, int pageSize) {
-        return postRepository.findByTypeAndState(type, state, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByTypeAndState(type, state, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -317,7 +330,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByUser(String user, int pageNumber, int pageSize) {
-        return postRepository.findByAuthorUsername(user, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByAuthorUsername(user, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -331,7 +344,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByUserId(String userId, int pageNumber, int pageSize) {
-        return postRepository.findByAuthorId(userId, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByAuthorId(userId, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -346,7 +359,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByTypeAndUser(PostType type, String user, int pageNumber, int pageSize) {
-        return postRepository.findByTypeAndAuthorId(type, user, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByTypeAndAuthorId(type, user, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -361,7 +374,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByStateAndUser(PostState state, String user, int pageNumber, int pageSize) {
-        return postRepository.findByStateAndAuthorId(state, user, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByStateAndAuthorId(state, user, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -377,7 +390,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByTypeAndStateAndUser(PostType type, PostState state, String user, int pageNumber, int pageSize) {
-        return postRepository.findByTypeAndStateAndAuthorId(type, state, user, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByTypeAndStateAndAuthorId(type, state, user, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -393,7 +406,7 @@ public class PostServiceImp implements IPostService {
      */
     @Override
     public Page<SavePost> getPostsByTypeAndStateAndDate(PostType type, PostState state, LocalDateTime date, int pageNumber, int pageSize) {
-        return postRepository.findByTypeAndStateAndCreateAt(type, state, date, PageRequest.of(pageNumber, pageSize))
+        return postRepository.findByTypeAndStateAndCreateAt(type, state, date, PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "createAt")))
                 .map(this::convertPostToSavePost);
     }
 
@@ -424,9 +437,15 @@ public class PostServiceImp implements IPostService {
         return getPosts(pageNumber, pageSize);
     }
 
-    private void checkUserAllowedToCreatePost(User user) {
+    private void checkUserAllowedToActionPost(User user) {
         if (!user.getRole().equals(Role.ADMIN)) {
             throw new RuntimeException("User not allowed to create adoption post");
+        }
+    }
+
+    private void checkUserAllowedToActionPost(User user, String message, Post post) {
+        if (!user.getRole().equals(Role.ADMIN) && !post.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException(String.format("User not allowed to %s another post", message));
         }
     }
 
@@ -470,7 +489,7 @@ public class PostServiceImp implements IPostService {
 
         LocalDateTime limitDateInf = newPostCreateAt.minusSeconds(timeDuplicated);
 
-        Page<Post> duplicatedPosts = postRepository.findByTitleAndCreateAtBetween(newPostTitle, limitDateInf, newPostCreateAt, PageRequest.of(0, 5));
+        Page<Post> duplicatedPosts = postRepository.findByTitleAndCreateAtBetween(newPostTitle, limitDateInf, newPostCreateAt, PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createAt")));
 
         return !duplicatedPosts.isEmpty();
     }

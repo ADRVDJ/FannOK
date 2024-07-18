@@ -7,7 +7,6 @@ import edu.tec.azuay.faan.persistence.entity.User;
 import edu.tec.azuay.faan.service.interfaces.IEmailService;
 import edu.tec.azuay.faan.service.interfaces.IUserService;
 import lombok.RequiredArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
